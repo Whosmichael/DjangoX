@@ -4,13 +4,14 @@ from django.contrib import messages
 from django.shortcuts import render
 from wishlist.models import BarangWishlist
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 import datetime
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+
 
 # Create your views here.
 
@@ -24,6 +25,33 @@ def show_wishlist(request):
     }
     return render(request, "wishlist.html", context)
 
+@login_required(login_url='/wishlist/login/')
+def show_wishlist_ajax(request):
+    context = {
+        'nama': 'michaelb',
+        'last_login': request.COOKIES['last_login'],
+    }
+    
+    return render(request, "wishlist_ajax.html", context)
+
+def create_wishlist(request: HttpRequest):
+    if request.method == "POST":
+        nama_barang = request.POST.get("nama_barang")
+        harga_barang = request.POST.get("harga_barang")
+        deskripsi = request.POST.get("deskripsi")
+
+        new_barang = BarangWishlist(
+            nama_barang=nama_barang,
+            harga_barang=harga_barang,
+            deskripsi=deskripsi,
+        )
+        new_barang.save()
+        return HttpResponse(
+            serializers.serialize("json", [new_barang]),
+            content_type="application/json",
+        )
+
+    return HttpResponse("Invalid method", status_code=405)
 
 def show_xml(request):
     data = BarangWishlist.objects.all()
